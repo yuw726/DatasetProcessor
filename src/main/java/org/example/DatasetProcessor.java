@@ -12,18 +12,18 @@ public class DatasetProcessor {
     private enum Operation {
         sumValues {
             @Override
-            public double execute(double a, double b) {
+            public double execute(int a, double b) {
                 return a + b;
             }
         },
         multiplyValues {
             @Override
-            public double execute(double a, double b) {
+            public double execute(int a, double b) {
                 return a * b;
             }
         };
 
-        public abstract double execute(double a, double b);
+        public abstract double execute(int a, double b);
     }
 
     private record Task(List<String> chunk, Operation operation) implements Callable<List<Double>> {
