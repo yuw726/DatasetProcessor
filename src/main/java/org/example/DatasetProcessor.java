@@ -47,29 +47,37 @@ public class DatasetProcessor {
         writerThread.start();
 
         // Process the input divided in chunks
-        try (ExecutorService sumExecutor = Executors.newFixedThreadPool(THREADPOOLSIZE);
-             ExecutorService multiplyExecutor = Executors.newFixedThreadPool(THREADPOOLSIZE)) {
+        ExecutorService sumExecutor = Executors.newFixedThreadPool(THREADPOOLSIZE);
+        ExecutorService multiplyExecutor = Executors.newFixedThreadPool(THREADPOOLSIZE);
 
-            while (true) {
-                final List<String> chunk = readerThread.getInputQueue().take();
-                if (chunk.isEmpty()) {
-                    // This is the end of the queue
-                    break;
-                }
-
-                // For each chunk there will be two tasks (add and multiply) in the result queue
-                // and their order is guaranteed by using Futures
-                result.put(sumExecutor.submit(new Task(chunk, Operation.sumValues)));
-                result.put(multiplyExecutor.submit(new Task(chunk, Operation.multiplyValues)));
+        while (true) {
+            final List<String> chunk = readerThread.getInputQueue().take();
+            if (chunk.isEmpty()) {
+                // This is the end of the queue
+                break;
             }
-            // We add two terminate tasks because the OutputWriter expects the tasks to come in pairs
-            final Future<List<Double>> terminateTask =
-                    sumExecutor.submit(new Task(Collections.emptyList(), Operation.sumValues));
-            result.put(terminateTask);
-            result.put(terminateTask);
-        }
 
+            // For each chunk there will be two tasks (add and multiply) in the result queue
+            // and their order is guaranteed by using Futures
+            result.put(sumExecutor.submit(new Task(chunk, Operation.sumValues)));
+            result.put(multiplyExecutor.submit(new Task(chunk, Operation.multiplyValues)));
+        }
+        // We add two terminate tasks because the OutputWriter expects the tasks to come in pairs
+        final Future<List<Double>> terminateTask =
+                sumExecutor.submit(new Task(Collections.emptyList(), Operation.sumValues));
+        result.put(terminateTask);
+        result.put(terminateTask);
+
+        // Wait for the threads to exit
         readerThread.join();
         writerThread.join();
+        sumExecutor.shutdown();
+        multiplyExecutor.shutdown();
+        if (!sumExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+            sumExecutor.shutdownNow();
+        }
+        if (!multiplyExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+            multiplyExecutor.shutdownNow();
+        }
     }
 }

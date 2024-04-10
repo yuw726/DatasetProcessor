@@ -1,9 +1,19 @@
 plugins {
     id 'java'
+    id 'application'
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
 }
 
 group = 'org.example'
 version = '1.0-SNAPSHOT'
+application {
+    mainClass = 'org.example.Main'
+}
 
 repositories {
     mavenCentral()
@@ -16,4 +26,13 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+jar {
+    archiveFileName = 'dataset-processor.jar'
+    manifest {
+        attributes(
+                'Main-Class': 'org.example.Main'
+        )
+    }
 }
