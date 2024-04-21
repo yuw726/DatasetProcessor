@@ -21,27 +21,26 @@ class CSVOutputWriterTest {
 
     @BeforeEach
     void setUp() {
-        BlockingQueue<Future<List<Double>>> queue = new LinkedBlockingQueue<>();
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        queue.add(executor.submit(() -> Arrays.asList(1.0, 2.0, 3.0)));
-        queue.add(executor.submit(() -> Arrays.asList(4.0, 5.0, 6.0)));
-        queue.add(executor.submit(() -> Collections.emptyList()));
-        queue.add(executor.submit(() -> Collections.emptyList()));
-        writer = new CSVOutputWriter(tmpFile, queue);
+        writer = new CSVOutputWriter(tmpFile);
+        writer.getOutputQueue().add(executor.submit(() -> Arrays.asList(1.0, 2.0, 3.0)));
+        writer.getOutputQueue().add(executor.submit(() -> Arrays.asList(4.0, 5.0, 6.0)));
+        writer.getOutputQueue().add(executor.submit(() -> Collections.emptyList()));
+        writer.getOutputQueue().add(executor.submit(() -> Collections.emptyList()));
     }
 
     @AfterEach
     void tearDown() {
         File file = new File(tmpFile);
-        if (!file.delete()) {
+        if (file.exists() && !file.delete()) {
             fail("Unable to delete tmp file");
         }
     }
 
     @Test
     public void testConstructor() {
-        assertThrows(IllegalArgumentException.class, () -> new CSVOutputWriter("test.txt", new LinkedBlockingQueue<>()));
-        assertDoesNotThrow(() -> new CSVOutputWriter(tmpFile, new LinkedBlockingQueue<>()));
+        assertThrows(IllegalArgumentException.class, () -> new CSVOutputWriter("test.txt"));
+        assertDoesNotThrow(() -> new CSVOutputWriter(tmpFile));
     }
 
     @Test

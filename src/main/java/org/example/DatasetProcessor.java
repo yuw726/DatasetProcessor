@@ -4,8 +4,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class DatasetProcessor {
-    private final BlockingQueue<Future<List<Double>>> result = new LinkedBlockingQueue<>();
-
     private final static int THREADPOOLSIZE = 5;
     protected static final int CHUNKSIZE = 1000;
 
@@ -43,7 +41,7 @@ public class DatasetProcessor {
         final InputReader readerThread = new CSVInputReader(source, CHUNKSIZE);
         readerThread.start();
 
-        final OutputWriter writerThread = new CSVOutputWriter(target, result);
+        final OutputWriter writerThread = new CSVOutputWriter(target);
         writerThread.start();
 
         // Process the input divided in chunks
@@ -59,14 +57,14 @@ public class DatasetProcessor {
 
             // For each chunk there will be two tasks (add and multiply) in the result queue
             // and their order is guaranteed by using Futures
-            result.put(sumExecutor.submit(new Task(chunk, Operation.sumValues)));
-            result.put(multiplyExecutor.submit(new Task(chunk, Operation.multiplyValues)));
+            writerThread.getOutputQueue().put(sumExecutor.submit(new Task(chunk, Operation.sumValues)));
+            writerThread.getOutputQueue().put(multiplyExecutor.submit(new Task(chunk, Operation.multiplyValues)));
         }
         // We add two terminate tasks because the OutputWriter expects the tasks to come in pairs
         final Future<List<Double>> terminateTask =
                 sumExecutor.submit(new Task(Collections.emptyList(), Operation.sumValues));
-        result.put(terminateTask);
-        result.put(terminateTask);
+        writerThread.getOutputQueue().put(terminateTask);
+        writerThread.getOutputQueue().put(terminateTask);
 
         // Wait for the threads to exit
         readerThread.join();

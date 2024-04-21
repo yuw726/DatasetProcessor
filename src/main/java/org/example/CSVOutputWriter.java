@@ -4,15 +4,14 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 public class CSVOutputWriter extends OutputWriter {
     private static final String HEADER = "#sum,#prod\n";
 
-    public CSVOutputWriter(String filename, BlockingQueue<Future<List<Double>>> result) {
-        super(filename, result);
+    public CSVOutputWriter(String filename) {
+        super(filename);
         if (!filename.endsWith(".csv")) {
             throw new IllegalArgumentException("Only .csv files are supported");
         }
